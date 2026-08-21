@@ -1,5 +1,8 @@
 package com.example.similarproducts.domain.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ExternalServiceException extends RuntimeException {
     private final String serviceName;
     private final String operation;
@@ -10,11 +13,4 @@ public class ExternalServiceException extends RuntimeException {
         this.operation = operation;
     }
 
-    public String getServiceName() {
-        return serviceName;
-    }
-
-    public String getOperation() {
-        return operation;
-    }
 }

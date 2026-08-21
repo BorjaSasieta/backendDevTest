@@ -1,5 +1,8 @@
 package com.example.similarproducts.domain.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ProductNotFoundException extends RuntimeException {
     private final String productId;
 
@@ -8,7 +11,4 @@ public class ProductNotFoundException extends RuntimeException {
         this.productId = productId;
     }
 
-    public String getProductId() {
-        return productId;
-    }
 }
