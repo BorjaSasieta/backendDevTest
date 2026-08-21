@@ -1,6 +1,8 @@
 package com.example.similarproducts.domain.service;
 
 import com.example.similarproducts.domain.Validator.ProductDetailValidator;
+import com.example.similarproducts.domain.exception.ExternalServiceException;
+import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.model.ProductDetail;
 import com.example.similarproducts.domain.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.port.out.ProductDetailProvider;
@@ -182,6 +184,97 @@ class SimilarProductsServiceTest {
             // Then
             StepVerifier.create(result)
                     .expectNext(product2, product3)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("should return empty when similar ids not found")
+        void shouldReturnEmptyWhenSimilarIdsNotFound() {
+            // Given
+            String productId = "1";
+            when(similarProductIdsProvider.findSimilarIds(productId))
+                    .thenReturn(Mono.error(new ProductNotFoundException(productId)));
+
+            // When
+            Flux<ProductDetail> result = useCase.execute(productId);
+
+            // Then
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("should skip product details not found by id")
+        void shouldSkipProductDetailsNotFoundById() {
+            // Given
+            String productId = "1";
+            List<String> similarIds = List.of("2");
+            when(similarProductIdsProvider.findSimilarIds(productId))
+                    .thenReturn(Mono.just(similarIds));
+            when(productDetailProvider.findById("2"))
+                    .thenReturn(Mono.error(new ProductNotFoundException("2")));
+
+            // When
+            Flux<ProductDetail> result = useCase.execute(productId);
+
+            // Then
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("should propagate external service exception from similar ids")
+        void shouldPropagateExternalServiceExceptionFromSimilarIds() {
+            // Given
+            String productId = "1";
+            when(similarProductIdsProvider.findSimilarIds(productId))
+                    .thenReturn(Mono.error(new ExternalServiceException("api", "findSimilarIds")));
+
+            // When
+            Flux<ProductDetail> result = useCase.execute(productId);
+
+            // Then
+            StepVerifier.create(result)
+                    .expectError(ExternalServiceException.class)
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("should propagate external service exception from product detail")
+        void shouldPropagateExternalServiceExceptionFromProductDetail() {
+            // Given
+            String productId = "1";
+            List<String> similarIds = List.of("2");
+            when(similarProductIdsProvider.findSimilarIds(productId))
+                    .thenReturn(Mono.just(similarIds));
+            when(productDetailProvider.findById("2"))
+                    .thenReturn(Mono.error(new ExternalServiceException("api", "findById")));
+
+            // When
+            Flux<ProductDetail> result = useCase.execute(productId);
+
+            // Then
+            StepVerifier.create(result)
+                    .expectError(ExternalServiceException.class)
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("should skip product details with unexpected errors")
+        void shouldSkipProductDetailsWithUnexpectedErrors() {
+            // Given
+            String productId = "1";
+            List<String> similarIds = List.of("2");
+            when(similarProductIdsProvider.findSimilarIds(productId))
+                    .thenReturn(Mono.just(similarIds));
+            when(productDetailProvider.findById("2"))
+                    .thenReturn(Mono.error(new RuntimeException("Unexpected error")));
+
+            // When
+            Flux<ProductDetail> result = useCase.execute(productId);
+
+            // Then
+            StepVerifier.create(result)
                     .verifyComplete();
         }
     }
