@@ -1,0 +1,54 @@
+server:
+  port: 5000
+
+external:
+  api:
+    base-url: http://localhost:3001
+
+spring:
+  application:
+    name: similar-products
+  main:
+    web-application-type: reactive
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      externalApi:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+  timelimiter:
+    instances:
+      externalApi:
+        timeoutDuration: 5s
+  retry:
+    instances:
+      externalApi:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+logging:
+  level:
+    com.example.similarproducts: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: INFO
