@@ -4,6 +4,7 @@ import com.example.similarproducts.domain.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailResponse;
 import com.example.similarproducts.infrastructure.mapper.ProductDetailMapper;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,11 +32,11 @@ public class SimilarProductsController {
                 .collectList()
                 .map(productDetails -> {
                     if (productDetails.isEmpty()) {
-                        return org.springframework.http.ResponseEntity.<Flux<ProductDetailResponse>>notFound().build();
+                        return ResponseEntity.notFound().build();
                     }
                     Flux<ProductDetailResponse> response = Flux.fromIterable(productDetails)
                             .map(productDetailMapper::toResponse);
-                    return org.springframework.http.ResponseEntity.ok(response);
+                    return ResponseEntity.ok(response);
                 });
     }
 }
