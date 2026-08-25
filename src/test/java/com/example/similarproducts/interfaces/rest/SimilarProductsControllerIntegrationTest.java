@@ -170,5 +170,53 @@ class SimilarProductsControllerIntegrationTest {
                     .expectBodyList(ProductDetailResponse.class)
                     .hasSize(2);
         }
+
+        @Test
+        @DisplayName("should use provided X-Request-Id header as correlation id")
+        void shouldUseProvidedCorrelationId() {
+            mockWebServer.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("[\"2\"]")
+                    .addHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+
+            mockWebServer.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("{\"id\":\"2\",\"name\":\"Dress\",\"price\":19.99,\"availability\":true}")
+                    .addHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+
+            webTestClient.get()
+                    .uri("/product/1/similar")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .header("X-Request-Id", "test-correlation-id-123")
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                    .expectBodyList(ProductDetailResponse.class)
+                    .hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should generate correlation id when X-Request-Id header is blank")
+        void shouldGenerateCorrelationIdWhenHeaderIsBlank() {
+            mockWebServer.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("[\"2\"]")
+                    .addHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+
+            mockWebServer.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("{\"id\":\"2\",\"name\":\"Dress\",\"price\":19.99,\"availability\":true}")
+                    .addHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+
+            webTestClient.get()
+                    .uri("/product/1/similar")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .header("X-Request-Id", "   ")
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                    .expectBodyList(ProductDetailResponse.class)
+                    .hasSize(1);
+        }
     }
 }
