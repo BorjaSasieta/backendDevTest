@@ -24,7 +24,7 @@ public class WebClientConfig {
                 .build();
 
         HttpClient httpClient = HttpClient.create(connectionProvider)
-                .responseTimeout(Duration.ofSeconds(10))
+                .responseTimeout(Duration.ofSeconds(5))
                 .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
 
         return WebClient.builder()

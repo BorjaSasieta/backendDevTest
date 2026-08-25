@@ -82,8 +82,8 @@ class SimilarProductsControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("should return 404 when product not found in similar ids")
-        void shouldReturn404WhenProductNotFound() {
+        @DisplayName("should return 200 with empty list when product not found in similar ids")
+        void shouldReturn200WithEmptyListWhenProductNotFound() {
             mockWebServer.enqueue(new MockResponse()
                     .setResponseCode(404)
                     .setBody("{\"message\":\"Product not found\"}")
@@ -93,7 +93,10 @@ class SimilarProductsControllerIntegrationTest {
                     .uri("/product/999/similar")
                     .accept(MediaType.APPLICATION_JSON)
                     .exchange()
-                    .expectStatus().isNotFound();
+                    .expectStatus().isOk()
+                    .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                    .expectBodyList(ProductDetailResponse.class)
+                    .hasSize(0);
         }
 
         @Test

@@ -1,0 +1,55 @@
+server:
+  port: 5000
+  shutdown: graceful
+
+external:
+  api:
+    base-url: http://localhost:3001
+
+spring:
+  application:
+    name: similar-products
+  main:
+    web-application-type: reactive
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      externalApi:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+  timelimiter:
+    instances:
+      externalApi:
+        timeoutDuration: 5s
+  retry:
+    instances:
+      externalApi:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+logging:
+  level:
+    com.example.similarproducts: INFO
+    org.springframework.web.reactive: INFO
+    reactor.netty: WARN

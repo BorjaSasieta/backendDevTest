@@ -1,0 +1,322 @@
+openapi: 3.0.3
+info:
+  title: Similar Products API
+  description: |
+    Spring Boot backend service that provides product details of similar products
+    for a given product ID. Built with hexagonal architecture, reactive WebFlux,
+    and Resilience4j for fault tolerance.
+
+    ## Architecture
+    - **Hexagonal Architecture**: Clean separation of domain, application, and infrastructure
+    - **Reactive**: Built with Spring WebFlux for non-blocking I/O
+    - **Resilient**: Circuit breaker, retry, and time limiter patterns via Resilience4j
+
+    ## Authentication
+    No authentication required for this API.
+
+    ## Rate Limiting
+    Rate limiting is managed at the infrastructure level (not enforced by the API itself).
+  version: '1.0'
+  contact:
+    name: API Support
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: http://localhost:3001
+    description: Mock server (Simulado)
+
+tags:
+  - name: Products
+    description: Product-related operations
+  - name: Health
+    description: Application health and monitoring
+
+paths:
+  /product/{productId}/similar:
+    get:
+      tags:
+        - Products
+      operationId: get-product-similar
+      summary: Get similar products
+      description: |
+        Returns a list of similar products with full details for a given product ID.
+        The response is ordered by similarity to the original product.
+
+        ### Resilience Features
+        - **Circuit Breaker**: Opens after 50% failure rate in a sliding window of 10 calls
+        - **Time Limiter**: 5-second timeout per external API call
+        - **Retry**: Up to 3 attempts with exponential backoff
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The ID of the product to find similar products for
+          schema:
+            type: string
+            minLength: 1
+          example: "1"
+      responses:
+        '200':
+          description: Similar products found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimilarProducts'
+              examples:
+                successful:
+                  summary: Successful response
+                  value:
+                    - id: "2"
+                      name: "Dress"
+                      price: 19.99
+                      availability: true
+                    - id: "3"
+                      name: "Blazer"
+                      price: 29.99
+                      availability: false
+                    - id: "4"
+                      name: "Boots"
+                      price: 39.99
+                      availability: true
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2026-08-25T10:00:00Z"
+                status: 404
+                error: "Not Found"
+                message: "Product not found"
+                path: "/product/999/similar"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2026-08-25T10:00:00Z"
+                status: 500
+                error: "Internal Server Error"
+                message: "External service unavailable"
+                path: "/product/5/similar"
+
+  /product/{productId}/similarids:
+    get:
+      tags:
+        - Products
+      operationId: get-product-similarids
+      summary: Get similar product IDs
+      description: |
+        Returns a list of similar product IDs for a given product ID.
+        This is an existing external API (mocked via Simulado).
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The ID of the product
+          schema:
+            type: string
+          example: "1"
+      responses:
+        '200':
+          description: Similar product IDs found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimilarProductIds'
+              example:
+                - "2"
+                - "3"
+                - "4"
+
+  /product/{productId}:
+    get:
+      tags:
+        - Products
+      operationId: get-product-productId
+      summary: Get product detail
+      description: |
+        Returns the product detail for a given product ID.
+        This is an existing external API (mocked via Simulado).
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The ID of the product
+          schema:
+            type: string
+          example: "1"
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+              example:
+                id: "1"
+                name: "Shirt"
+                price: 9.99
+                availability: true
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Product not found"
+
+  /actuator/health:
+    get:
+      tags:
+        - Health
+      operationId: get-health
+      summary: Health check
+      description: Returns the health status of the application
+      responses:
+        '200':
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /actuator/info:
+    get:
+      tags:
+        - Health
+      operationId: get-info
+      summary: Application info
+      description: Returns information about the application
+      responses:
+        '200':
+          description: Application info
+
+  /actuator/metrics:
+    get:
+      tags:
+        - Health
+      operationId: get-metrics
+      summary: Application metrics
+      description: Returns application metrics
+      responses:
+        '200':
+          description: Metrics data
+
+  /actuator/prometheus:
+    get:
+      tags:
+        - Health
+      operationId: get-prometheus
+      summary: Prometheus metrics
+      description: Returns metrics in Prometheus format
+      responses:
+        '200':
+          description: Prometheus metrics data
+
+components:
+  schemas:
+    SimilarProducts:
+      type: array
+      description: List of similar products ordered by similarity
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/ProductDetail'
+
+    SimilarProductIds:
+      type: array
+      description: List of similar product IDs
+      minItems: 0
+      uniqueItems: true
+      items:
+        type: string
+        example: "2"
+
+    ProductDetail:
+      description: Product detail
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: Unique product identifier
+          example: "1"
+        name:
+          type: string
+          minLength: 1
+          description: Product name
+          example: "Shirt"
+        price:
+          type: number
+          format: double
+          minimum: 0
+          description: Product price (must be positive or zero)
+          example: 9.99
+        availability:
+          type: boolean
+          description: Whether the product is in stock
+          example: true
+      required:
+        - id
+        - name
+        - price
+        - availability
+
+    ErrorResponse:
+      description: Error response
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2026-08-25T10:00:00Z"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        error:
+          type: string
+          description: HTTP status text
+          example: "Not Found"
+        message:
+          type: string
+          description: Error message
+          example: "Product not found"
+        path:
+          type: string
+          description: Request path
+          example: "/product/999/similar"
+
+    HealthResponse:
+      description: Health check response
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DOWN
+          example: "UP"
+        components:
+          type: object
+          properties:
+            circuitBreakers:
+              type: object
+              properties:
+                externalApi:
+                  type: string
+                  example: "CLOSED"
+
+  securitySchemes: {}
+
+security: []

@@ -4,6 +4,7 @@ import com.example.similarproducts.domain.exception.ExternalServiceException;
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ErrorResponse;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,13 @@ public class GlobalExceptionHandler {
             CallNotPermittedException ex, ServerWebExchange exchange) {
         log.warn("Circuit breaker open: {}", ex.getMessage());
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, "Circuit breaker is open. Service unavailable.", exchange);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex, ServerWebExchange exchange) {
+        log.warn("Validation failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), exchange);
     }
 
     @ExceptionHandler(Exception.class)
